@@ -32,3 +32,37 @@ contract SaffronIndexKeel {
     error SIK_DelayOutOfBounds();
     error SIK_BoundsInvalid();
     error SIK_ProposalStale(bytes32 proposalId, uint256 staleAt);
+    error SIK_ProposalIdMismatch();
+    error SIK_NoteZero();
+    error SIK_NonceTooSmall();
+
+    uint256 public constant SIK_REVISION = 2;
+    uint256 public constant SIK_DEFAULT_DELAY = 18 hours;
+    uint256 public constant SIK_DEFAULT_MIN_DELAY = 10 minutes;
+    uint256 public constant SIK_DEFAULT_MAX_DELAY = 7 days;
+    uint256 public constant SIK_PROPOSAL_TTL = 30 days;
+    uint64 public constant SIK_DEFAULT_MAX_INDEX = 9_999_999;
+    bytes32 public constant SIK_DOMAIN = keccak256("SaffronIndexKeel.v1");
+    bytes32 public constant SIK_NOTE_DOMAIN = keccak256("SaffronIndexKeel.Footnote.v1");
+    uint8 public constant SIK_HISTORY_SIZE = 24;
+    uint8 public constant SIK_PROPOSAL_LOG_SIZE = 32;
+    uint256 public constant SIK_MIN_SPACING_SECONDS = 60;
+
+    address public immutable keeper;
+    address public immutable pilot;
+    address public immutable helmsman;
+
+    bool private _paused;
+    uint256 private _guard;
+    uint64 private _index;
+    uint256 private _nonce;
+
+    bytes32 private _pendingId;
+    uint64 private _pendingIndex;
+    uint256 private _pendingExecuteAfter;
+    uint256 private _lastDecisionAt;
+    uint256 private _lastQueueAt;
+
+    uint256 private _delay;
+    uint256 private _minDelay;
+    uint256 private _maxDelay;
