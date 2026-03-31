@@ -66,3 +66,37 @@ contract SaffronIndexKeel {
     uint256 private _delay;
     uint256 private _minDelay;
     uint256 private _maxDelay;
+    uint64 private _maxIndex;
+
+    enum ProposalState {
+        None,
+        Queued,
+        Activated,
+        Cancelled,
+        Expired
+    }
+
+    struct ProposalMeta {
+        uint64 nextIndex;
+        uint64 previousIndex;
+        uint256 nonce;
+        uint256 queuedAt;
+        uint256 executeAfter;
+        uint256 decidedAt;
+        ProposalState state;
+    }
+
+    mapping(bytes32 => ProposalMeta) private _proposal;
+
+    struct HistoryEntry {
+        uint64 index;
+        bytes32 proposalId;
+        uint256 activatedAt;
+        uint256 nonceAfter;
+    }
+
+    HistoryEntry[SIK_HISTORY_SIZE] private _history;
+    uint256 private _historyHead;
+    uint256 private _historyCount;
+
+    bytes32[SIK_PROPOSAL_LOG_SIZE] private _proposalLog;
