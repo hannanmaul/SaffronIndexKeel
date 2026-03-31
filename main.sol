@@ -134,3 +134,37 @@ contract SaffronIndexKeel {
         if (msg.sender != helmsman) revert SIK_NotHelmsman();
         _;
     }
+
+    modifier whenLive() {
+        if (_paused) revert SIK_Paused();
+        _;
+    }
+
+    modifier nonReentrant() {
+        if (_guard == 1) revert SIK_Reentrancy();
+        _guard = 1;
+        _;
+        _guard = 0;
+    }
+
+    function setPaused(bool paused_) external onlyKeeper {
+        _paused = paused_;
+        emit SIK_PauseChanged(paused_, msg.sender);
+    }
+
+    function setDelayBounds(uint256 minDelay_, uint256 maxDelay_) external onlyKeeper {
+        if (minDelay_ == 0 || maxDelay_ == 0 || minDelay_ > maxDelay_) revert SIK_BoundsInvalid();
+        _minDelay = minDelay_;
+        _maxDelay = maxDelay_;
+        if (_delay < _minDelay || _delay > _maxDelay) revert SIK_DelayOutOfBounds();
+        emit SIK_DelayBoundsSet(minDelay_, maxDelay_, msg.sender);
+    }
+
+    function setDelay(uint256 delay_) external onlyKeeper {
+        if (delay_ < _minDelay || delay_ > _maxDelay) revert SIK_DelayOutOfBounds();
+        _delay = delay_;
+        emit SIK_DelaySet(delay_, msg.sender);
+    }
+
+    function setMaxIndex(uint64 maxIndex_) external onlyKeeper {
+        if (maxIndex_ == 0) revert SIK_InvalidIndex();
