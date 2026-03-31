@@ -100,3 +100,37 @@ contract SaffronIndexKeel {
     uint256 private _historyCount;
 
     bytes32[SIK_PROPOSAL_LOG_SIZE] private _proposalLog;
+    uint256 private _proposalLogHead;
+    uint256 private _proposalLogCount;
+
+    mapping(bytes32 => bool) private _footnoteSeen;
+
+    constructor() {
+        keeper = 0x682fc77BF23878E0eD5E498dBb203183a571fab2;
+        pilot = 0x52fBCBa65b0a18BB31f7465419c92a4b37Db7FD8;
+        helmsman = 0xE83d24daCE06f576487755D475DE76df41f05112;
+
+        _index = 101;
+        _nonce = 1;
+        _delay = SIK_DEFAULT_DELAY;
+        _minDelay = SIK_DEFAULT_MIN_DELAY;
+        _maxDelay = SIK_DEFAULT_MAX_DELAY;
+        _maxIndex = SIK_DEFAULT_MAX_INDEX;
+        _lastDecisionAt = block.timestamp;
+        _lastQueueAt = 0;
+    }
+
+    modifier onlyKeeper() {
+        if (msg.sender != keeper) revert SIK_NotKeeper();
+        _;
+    }
+
+    modifier onlyPilot() {
+        if (msg.sender != pilot) revert SIK_NotPilot();
+        _;
+    }
+
+    modifier onlyHelmsman() {
+        if (msg.sender != helmsman) revert SIK_NotHelmsman();
+        _;
+    }
