@@ -202,3 +202,37 @@ contract SaffronIndexKeel {
         emit SIK_Reseeded(old, newNonce, msg.sender);
     }
 
+    /// @notice Emits a deterministic digest of the current configuration (for off-chain monitoring).
+    function imprintDomain() external whenLive nonReentrant {
+        bytes32 d = keccak256(
+            abi.encode(
+                SIK_DOMAIN,
+                _delay,
+                _minDelay,
+                _maxDelay,
+                _maxIndex,
+                _index,
+                _nonce,
+                _paused,
+                block.chainid
+            )
+        );
+        emit SIK_DomainImprint(d, msg.sender);
+    }
+
+    /// @notice Pilot proposes `nextIndex`; helmsman can activate after delay with the correct `salt`.
+    function proposeIndex(uint64 nextIndex, bytes32 salt) external onlyPilot whenLive nonReentrant returns (bytes32 proposalId) {
+        if (_pendingExecuteAfter != 0) revert SIK_ProposalExists();
+        if (nextIndex == 0 || nextIndex > _maxIndex) revert SIK_InvalidIndex();
+        if (block.timestamp < _lastQueueAt + SIK_MIN_SPACING_SECONDS) revert SIK_TooEarly();
+
+        proposalId = _proposalId(nextIndex, salt, _nonce);
+        _pendingId = proposalId;
+        _pendingIndex = nextIndex;
+        _pendingExecuteAfter = block.timestamp + _delay;
+        _lastQueueAt = block.timestamp;
+
+        ProposalMeta storage m = _proposal[proposalId];
+        m.nextIndex = nextIndex;
+        m.previousIndex = _index;
+        m.nonce = _nonce;
