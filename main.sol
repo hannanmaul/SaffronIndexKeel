@@ -236,3 +236,37 @@ contract SaffronIndexKeel {
         m.nextIndex = nextIndex;
         m.previousIndex = _index;
         m.nonce = _nonce;
+        m.queuedAt = block.timestamp;
+        m.executeAfter = _pendingExecuteAfter;
+        m.decidedAt = 0;
+        m.state = ProposalState.Queued;
+
+        _pushProposalLog(proposalId);
+        emit SIK_IndexProposed(nextIndex, proposalId, _pendingExecuteAfter, msg.sender);
+    }
+
+    function cancelProposal() external onlyKeeper nonReentrant {
+        if (_pendingExecuteAfter == 0) revert SIK_NoProposal();
+        bytes32 pid = _pendingId;
+        ProposalMeta storage m = _proposal[pid];
+        if (m.state != ProposalState.Queued) revert SIK_NoProposal();
+        m.state = ProposalState.Cancelled;
+        m.decidedAt = block.timestamp;
+        _lastDecisionAt = block.timestamp;
+        _clearPending();
+        emit SIK_ProposalCancelled(pid, msg.sender);
+    }
+
+    function activateIndex(uint64 nextIndex, bytes32 salt) external onlyHelmsman whenLive nonReentrant {
+        if (_pendingExecuteAfter == 0) revert SIK_NoProposal();
+        if (block.timestamp < _pendingExecuteAfter) revert SIK_TooEarly();
+        if (nextIndex != _pendingIndex) revert SIK_BadReveal();
+
+        bytes32 pid = _proposalId(nextIndex, salt, _nonce);
+        if (pid != _pendingId) revert SIK_BadReveal();
+
+        ProposalMeta storage m = _proposal[pid];
+        if (m.state != ProposalState.Queued) revert SIK_NoProposal();
+        if (block.timestamp >= m.queuedAt + SIK_PROPOSAL_TTL) {
+            revert SIK_ProposalStale(pid, m.queuedAt + SIK_PROPOSAL_TTL);
+        }
