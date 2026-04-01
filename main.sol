@@ -168,3 +168,37 @@ contract SaffronIndexKeel {
 
     function setMaxIndex(uint64 maxIndex_) external onlyKeeper {
         if (maxIndex_ == 0) revert SIK_InvalidIndex();
+        _maxIndex = maxIndex_;
+        emit SIK_MaxIndexSet(maxIndex_, msg.sender);
+    }
+
+    function expireProposal() external nonReentrant {
+        if (_pendingExecuteAfter == 0) revert SIK_NoProposal();
+        ProposalMeta storage m = _proposal[_pendingId];
+        if (m.state != ProposalState.Queued) revert SIK_NoProposal();
+        if (block.timestamp < m.queuedAt + SIK_PROPOSAL_TTL) revert SIK_TooEarly();
+
+        bytes32 pid = _pendingId;
+        m.state = ProposalState.Expired;
+        m.decidedAt = block.timestamp;
+        _lastDecisionAt = block.timestamp;
+        _clearPending();
+        emit SIK_ProposalExpired(pid, msg.sender);
+    }
+
+    /// @notice Optional footnote log (content-addressed) for ops/audits; write-once per noteId.
+    function writeFootnote(bytes32 noteId, bytes32 noteHash) external whenLive nonReentrant {
+        if (noteId == bytes32(0) || noteHash == bytes32(0)) revert SIK_NoteZero();
+        if (_footnoteSeen[noteId]) revert SIK_BadReveal();
+        _footnoteSeen[noteId] = true;
+        emit SIK_FootnoteWritten(noteId, keccak256(abi.encode(SIK_NOTE_DOMAIN, noteId, noteHash, block.chainid)), msg.sender);
+    }
+
+    /// @notice Keeper can reseed the nonce upward (one-way) for operational resets without changing roles.
+    function reseedNonce(uint256 newNonce) external onlyKeeper nonReentrant {
+        if (newNonce <= _nonce) revert SIK_NonceTooSmall();
+        uint256 old = _nonce;
+        _nonce = newNonce;
+        emit SIK_Reseeded(old, newNonce, msg.sender);
+    }
+
