@@ -304,3 +304,37 @@ contract SaffronIndexKeel {
         return _proposalId(nextIndex, salt, _nonce);
     }
 
+    function delay() external view returns (uint256) {
+        return _delay;
+    }
+
+    function delayBounds() external view returns (uint256 minDelay, uint256 maxDelay) {
+        return (_minDelay, _maxDelay);
+    }
+
+    function maxIndex() external view returns (uint64) {
+        return _maxIndex;
+    }
+
+    function config()
+        external
+        view
+        returns (
+            uint64 index_,
+            uint64 maxIndex_,
+            uint256 nonce_,
+            uint256 delay_,
+            uint256 minDelay_,
+            uint256 maxDelay_,
+            bool paused_
+        )
+    {
+        return (_index, _maxIndex, _nonce, _delay, _minDelay, _maxDelay, _paused);
+    }
+
+    function proposalState(bytes32 proposalId) external view returns (ProposalState) {
+        return _proposal[proposalId].state;
+    }
+
+    function proposalMeta(bytes32 proposalId)
+        external
