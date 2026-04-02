@@ -270,3 +270,37 @@ contract SaffronIndexKeel {
         if (block.timestamp >= m.queuedAt + SIK_PROPOSAL_TTL) {
             revert SIK_ProposalStale(pid, m.queuedAt + SIK_PROPOSAL_TTL);
         }
+
+        _index = nextIndex;
+        _nonce = _nonce + 1;
+        _clearPending();
+
+        m.state = ProposalState.Activated;
+        m.decidedAt = block.timestamp;
+        _lastDecisionAt = block.timestamp;
+
+        _pushHistory(pid);
+        emit SIK_IndexActivated(_index, pid, msg.sender);
+    }
+
+    function currentIndex() external view returns (uint64) {
+        return _index;
+    }
+
+    function paused() external view returns (bool) {
+        return _paused;
+    }
+
+    function nonce() external view returns (uint256) {
+        return _nonce;
+    }
+
+    function pending() external view returns (bytes32 proposalId, uint64 nextIndex, uint256 executeAfter, bool exists) {
+        exists = _pendingExecuteAfter != 0;
+        return (_pendingId, _pendingIndex, _pendingExecuteAfter, exists);
+    }
+
+    function previewProposalId(uint64 nextIndex, bytes32 salt) external view returns (bytes32) {
+        return _proposalId(nextIndex, salt, _nonce);
+    }
+
