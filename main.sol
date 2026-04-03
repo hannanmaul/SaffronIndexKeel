@@ -372,3 +372,37 @@ contract SaffronIndexKeel {
     function proposalLogAt(uint256 i) external view returns (bytes32 proposalId) {
         if (i >= _proposalLogCount) revert SIK_InvalidIndex();
         uint256 pos = (_proposalLogHead + SIK_PROPOSAL_LOG_SIZE - _proposalLogCount + i) % SIK_PROPOSAL_LOG_SIZE;
+        return _proposalLog[pos];
+    }
+
+    function lastProposalId() external view returns (bytes32 proposalId, bool exists) {
+        if (_proposalLogCount == 0) return (bytes32(0), false);
+        uint256 pos = (_proposalLogHead + SIK_PROPOSAL_LOG_SIZE - 1) % SIK_PROPOSAL_LOG_SIZE;
+        return (_proposalLog[pos], true);
+    }
+
+    function timeUntilActivation() external view returns (uint256) {
+        if (_pendingExecuteAfter == 0) return 0;
+        if (block.timestamp >= _pendingExecuteAfter) return 0;
+        return _pendingExecuteAfter - block.timestamp;
+    }
+
+    function timeUntilExpiry() external view returns (uint256) {
+        if (_pendingExecuteAfter == 0) return 0;
+        ProposalMeta memory m = _proposal[_pendingId];
+        if (m.state != ProposalState.Queued) return 0;
+        uint256 exp = m.queuedAt + SIK_PROPOSAL_TTL;
+        if (block.timestamp >= exp) return 0;
+        return exp - block.timestamp;
+    }
+
+    function pendingState() external view returns (ProposalState state) {
+        if (_pendingExecuteAfter == 0) return ProposalState.None;
+        return _proposal[_pendingId].state;
+    }
+
+    function pendingExpectedId(uint64 nextIndex, bytes32 salt) external view returns (bytes32) {
+        return _proposalId(nextIndex, salt, _nonce);
+    }
+
+    function canActivateNow() external view returns (bool) {
