@@ -338,3 +338,37 @@ contract SaffronIndexKeel {
 
     function proposalMeta(bytes32 proposalId)
         external
+        view
+        returns (
+            uint64 nextIndex,
+            uint64 previousIndex,
+            uint256 nonce_,
+            uint256 queuedAt,
+            uint256 executeAfter,
+            uint256 decidedAt,
+            ProposalState state
+        )
+    {
+        ProposalMeta memory m = _proposal[proposalId];
+        return (m.nextIndex, m.previousIndex, m.nonce, m.queuedAt, m.executeAfter, m.decidedAt, m.state);
+    }
+
+    function lastDecisionAt() external view returns (uint256) {
+        return _lastDecisionAt;
+    }
+
+    function lastQueueAt() external view returns (uint256) {
+        return _lastQueueAt;
+    }
+
+    function minProposalSpacingSeconds() external pure returns (uint256) {
+        return SIK_MIN_SPACING_SECONDS;
+    }
+
+    function proposalLogCount() external view returns (uint256) {
+        return _proposalLogCount;
+    }
+
+    function proposalLogAt(uint256 i) external view returns (bytes32 proposalId) {
+        if (i >= _proposalLogCount) revert SIK_InvalidIndex();
+        uint256 pos = (_proposalLogHead + SIK_PROPOSAL_LOG_SIZE - _proposalLogCount + i) % SIK_PROPOSAL_LOG_SIZE;
