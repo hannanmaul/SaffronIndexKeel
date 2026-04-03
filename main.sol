@@ -406,3 +406,37 @@ contract SaffronIndexKeel {
     }
 
     function canActivateNow() external view returns (bool) {
+        if (_paused) return false;
+        if (_pendingExecuteAfter == 0) return false;
+        ProposalMeta memory m = _proposal[_pendingId];
+        if (m.state != ProposalState.Queued) return false;
+        if (block.timestamp < m.executeAfter) return false;
+        if (block.timestamp >= m.queuedAt + SIK_PROPOSAL_TTL) return false;
+        return true;
+    }
+
+    function historyCount() external view returns (uint256) {
+        return _historyCount;
+    }
+
+    function historyAt(uint256 i) external view returns (uint64 index_, bytes32 proposalId, uint256 activatedAt, uint256 nonceAfter) {
+        if (i >= _historyCount) revert SIK_InvalidIndex();
+        uint256 pos = (_historyHead + SIK_HISTORY_SIZE - _historyCount + i) % SIK_HISTORY_SIZE;
+        HistoryEntry memory e = _history[pos];
+        return (e.index, e.proposalId, e.activatedAt, e.nonceAfter);
+    }
+
+    function lastHistory() external view returns (uint64 index_, bytes32 proposalId, uint256 activatedAt, uint256 nonceAfter, bool exists) {
+        if (_historyCount == 0) return (0, bytes32(0), 0, 0, false);
+        uint256 pos = (_historyHead + SIK_HISTORY_SIZE - 1) % SIK_HISTORY_SIZE;
+        HistoryEntry memory e = _history[pos];
+        return (e.index, e.proposalId, e.activatedAt, e.nonceAfter, true);
+    }
+
+    function historyWindow()
+        external
+        view
+        returns (
+            uint64[] memory indices,
+            bytes32[] memory proposalIds,
+            uint256[] memory activatedAts,
