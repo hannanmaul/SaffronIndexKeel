@@ -474,3 +474,26 @@ contract SaffronIndexKeel {
         _history[_historyHead] = HistoryEntry({
             index: _index,
             proposalId: pid,
+            activatedAt: block.timestamp,
+            nonceAfter: _nonce
+        });
+        _historyHead = (_historyHead + 1) % SIK_HISTORY_SIZE;
+        if (_historyCount < SIK_HISTORY_SIZE) {
+            _historyCount += 1;
+        }
+    }
+
+    function _pushProposalLog(bytes32 pid) private {
+        _proposalLog[_proposalLogHead] = pid;
+        _proposalLogHead = (_proposalLogHead + 1) % SIK_PROPOSAL_LOG_SIZE;
+        if (_proposalLogCount < SIK_PROPOSAL_LOG_SIZE) {
+            _proposalLogCount += 1;
+        }
+    }
+
+    function _clearPending() private {
+        _pendingId = bytes32(0);
+        _pendingIndex = 0;
+        _pendingExecuteAfter = 0;
+    }
+}
