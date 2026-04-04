@@ -440,3 +440,37 @@ contract SaffronIndexKeel {
             uint64[] memory indices,
             bytes32[] memory proposalIds,
             uint256[] memory activatedAts,
+            uint256[] memory nonceAfters
+        )
+    {
+        uint256 n = _historyCount;
+        indices = new uint64[](n);
+        proposalIds = new bytes32[](n);
+        activatedAts = new uint256[](n);
+        nonceAfters = new uint256[](n);
+
+        for (uint256 i = 0; i < n; ) {
+            uint256 pos = (_historyHead + SIK_HISTORY_SIZE - _historyCount + i) % SIK_HISTORY_SIZE;
+            HistoryEntry memory e = _history[pos];
+            indices[i] = e.index;
+            proposalIds[i] = e.proposalId;
+            activatedAts[i] = e.activatedAt;
+            nonceAfters[i] = e.nonceAfter;
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function footnoteSeen(bytes32 noteId) external view returns (bool) {
+        return _footnoteSeen[noteId];
+    }
+
+    function _proposalId(uint64 nextIndex, bytes32 salt, uint256 nonce_) private view returns (bytes32) {
+        return keccak256(abi.encode(SIK_DOMAIN, nextIndex, salt, nonce_, block.chainid));
+    }
+
+    function _pushHistory(bytes32 pid) private {
+        _history[_historyHead] = HistoryEntry({
+            index: _index,
+            proposalId: pid,
